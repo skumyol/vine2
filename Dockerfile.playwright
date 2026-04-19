@@ -1,13 +1,10 @@
-# Use your existing Playwright image (Node.js variant) + install Python
-FROM mcr.microsoft.com/playwright:v1.50.0-noble
+# Use Playwright Python image (Python + Playwright pre-installed)
+FROM mcr.microsoft.com/playwright/python:v1.50.0-noble
 
 WORKDIR /app
 
-# Install Python, pip, and curl (curl needed for healthcheck)
+# Install curl for healthcheck only (Python already present)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    python3-venv \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*

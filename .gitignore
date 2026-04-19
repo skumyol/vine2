@@ -1,0 +1,13 @@
+.agents/
+.windsurf/
+_bmad/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+data/
+.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

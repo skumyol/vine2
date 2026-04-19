@@ -1,0 +1,13 @@
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
+Pillow>=10.4,<12.0
+python-dotenv>=1.0,<2.0
+
+# Note: Playwright is now in a separate container (playwright-service/)
+# It can be installed locally for development if needed:
+# playwright>=1.52,<2.0
+
+# Optional: PaddleOCR-VL cloud VLM OCR (requires API endpoint)
+# langchain-paddleocr>=0.1.0

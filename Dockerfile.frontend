@@ -1,0 +1,27 @@
+# Frontend Dockerfile - Multi-stage build (build React, serve with nginx)
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY frontend/ ./
+RUN pnpm build
+
+# Production stage - serve with nginx
+FROM nginx:alpine
+
+# Copy built assets from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx config for SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

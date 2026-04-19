@@ -1,0 +1,102 @@
+# Docker Compose for VinoBuzz - Backend, Playwright Service, Frontend
+services:
+  # Backend API (no Playwright - uses playwright service via HTTP)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: vinobuzz-backend
+    restart: unless-stopped
+    ports:
+      - "8042:8000"
+    env_file:
+      - .env
+    environment:
+      - VINO_DEBUG=false
+      - VINO_ANALYZER_MODE=strict
+      - VINO_PIPELINE_NAME=${VINO_PIPELINE_NAME:-voter}
+      - VINO_RETRIEVAL_BACKEND=${VINO_RETRIEVAL_BACKEND:-playwright}
+      - VINO_CORS_ORIGINS=${VINO_CORS_ORIGINS:-http://localhost:3042,http://127.0.0.1:3042}
+      - VINO_PLAYWRIGHT_SERVICE_URL=http://playwright:8000
+    volumes:
+      # Persist data directory for downloaded images/results
+      - ./data:/app/data
+    depends_on:
+      playwright:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - vinobuzz-network
+
+  # Playwright Browser Automation Service (separate container)
+  playwright:
+    build:
+      context: .
+      dockerfile: Dockerfile.playwright
+    container_name: vinobuzz-playwright
+    restart: unless-stopped
+    ports:
+      - "8043:8000"
+    environment:
+      - PLAYWRIGHT_TIMEOUT=15000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - vinobuzz-network
+
+  # Frontend Nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: vinobuzz-frontend
+    restart: unless-stopped
+    ports:
+      - "3042:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - vinobuzz-network
+
+networks:
+  vinobuzz-network:
+    driver: bridge
+
+# Optional: Add volumes for persistence
+volumes:
+  vinobuzz-data:
+    driver: local

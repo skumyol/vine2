@@ -5,7 +5,7 @@ import type {
   PipelineName,
 } from '@/types'
 
-const BASE = ''
+const BASE = '/vine'  // Matches host nginx location /vine/
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -20,7 +20,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export async function checkHealth(): Promise<{ status: string }> {
-  return request('/health')
+  return request('/api/health')  // Maps to /vine/api/health via BASE prefix
 }
 
 export async function analyzeSku(payload: AnalyzeRequest): Promise<AnalyzeResponse> {

@@ -8,7 +8,7 @@ services:
     container_name: vinobuzz-backend
     restart: unless-stopped
     ports:
-      - "8042:8000"
+      - "8001:8000"  # Host nginx expects localhost:8001 for /vine/api/
     env_file:
       - .env
     environment:
@@ -16,7 +16,7 @@ services:
       - VINO_ANALYZER_MODE=strict
       - VINO_PIPELINE_NAME=${VINO_PIPELINE_NAME:-voter}
       - VINO_RETRIEVAL_BACKEND=${VINO_RETRIEVAL_BACKEND:-playwright}
-      - VINO_CORS_ORIGINS=${VINO_CORS_ORIGINS:-http://localhost:3042,http://127.0.0.1:3042}
+      - VINO_CORS_ORIGINS=${VINO_CORS_ORIGINS:-https://skumyol.com,http://localhost:3001}
       - VINO_PLAYWRIGHT_SERVICE_URL=http://playwright:8000
     volumes:
       # Persist data directory for downloaded images/results
@@ -78,7 +78,7 @@ services:
     container_name: vinobuzz-frontend
     restart: unless-stopped
     ports:
-      - "3042:80"
+      - "3001:80"  # Host nginx expects localhost:3001 for /vine/
     depends_on:
       backend:
         condition: service_healthy

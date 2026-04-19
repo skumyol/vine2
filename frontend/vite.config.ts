@@ -11,13 +11,14 @@ export default defineConfig({
     },
   },
   server: {
+    port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5173,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VINO_BACKEND_URL || 'http://127.0.0.1:18000',
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://127.0.0.1:8000',
+        target: process.env.VINO_BACKEND_URL || 'http://127.0.0.1:18000',
         changeOrigin: true,
       },
     },

@@ -23,8 +23,10 @@ def _call_playwright_service(queries: list[str], settings) -> list[Candidate]:
     import urllib.error
 
     service_url = settings.playwright_service_url.rstrip("/")
+    # Cap queries sent to service to keep latency under timeout budget
+    capped_queries = list(queries)[:3]
     payload = {
-        "queries": queries,
+        "queries": capped_queries,
         "search_url_template": settings.playwright_search_url_template,
         "search_url_templates": list(settings.playwright_search_url_templates or []),
         "candidate_limit": settings.candidate_download_limit,
@@ -42,7 +44,7 @@ def _call_playwright_service(queries: list[str], settings) -> list[Candidate]:
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=180) as response:
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         raise RuntimeError(f"Playwright service error: {exc.code} {exc.reason}") from exc

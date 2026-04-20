@@ -25,6 +25,9 @@ COPY backend/ ./backend/
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
+# Set ownership of all app code to appuser
+RUN chown -R appuser:appuser /app
+
 # Create data directory and set permissions
 RUN mkdir -p /app/data && chown -R appuser:appuser /app/data
 

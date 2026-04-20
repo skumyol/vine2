@@ -8,7 +8,7 @@ services:
     container_name: vinobuzz-backend
     restart: unless-stopped
     ports:
-      - "8001:8000"  # Host nginx expects localhost:8001 for /vine/api/
+      - "8002:8000"  # Host nginx expects localhost:8002 for /wine/api/
     env_file:
       - .env
     environment:
@@ -78,7 +78,7 @@ services:
     container_name: vinobuzz-frontend
     restart: unless-stopped
     ports:
-      - "3001:80"  # Host nginx expects localhost:3001 for /vine/
+      - "3002:80"  # Host nginx expects localhost:3002 for /wine/
     depends_on:
       backend:
         condition: service_healthy

@@ -5,7 +5,7 @@ import type {
   PipelineName,
 } from '@/types'
 
-const BASE = '/vine'  // Matches host nginx location /vine/
+const BASE = '/wine'  // Matches host nginx location /wine/
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

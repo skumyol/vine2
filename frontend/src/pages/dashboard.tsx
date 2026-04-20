@@ -142,7 +142,7 @@ export function Dashboard() {
                 {batchLoading ? (
                   <>
                     <Spinner className="h-3.5 w-3.5" />
-                    Running {batchProgress.done}/{batchProgress.total}...
+                    Processing {batchProgress.total} SKUs...
                   </>
                 ) : (
                   <>Run All 10 Test SKUs</>

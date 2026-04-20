@@ -38,6 +38,7 @@ export function Dashboard() {
   }, [])
 
   const handleBatch = useCallback(async () => {
+    console.log('handleBatch clicked')
     setBatchLoading(true)
     setError(null)
     setBatchProgress({ done: 0, total: TEST_SKUS.length })
@@ -49,11 +50,14 @@ export function Dashboard() {
         region: s.region,
         analyzer_mode: 'strict' as const,
       }))
+      console.log('Calling analyzeBatchWithPipeline with', items.length, 'items')
       const res = await analyzeBatchWithPipeline(items, batchPipeline)
+      console.log('Batch result:', res)
       setResults(res.results)
       setBatchProgress({ done: res.results.length, total: TEST_SKUS.length })
       setSelectedIdx(null)
     } catch (e) {
+      console.error('Batch error:', e)
       setError(e instanceof Error ? e.message : 'Batch analysis failed')
     } finally {
       setBatchLoading(false)

@@ -5,7 +5,7 @@ import type {
   PipelineName,
 } from '@/types'
 
-const BASE = '/vine2'  // Matches host nginx location /vine2/
+const BASE = window.location.pathname.startsWith('/vine2') ? '/vine2' : ''  // '' for local dev, '/vine2' for production
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

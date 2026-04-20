@@ -4,8 +4,11 @@ import { Dashboard } from '@/pages/dashboard'
 import { ArchitecturePage } from '@/pages/architecture'
 
 function App() {
+  // Detect if running under /vine2/ path (production) or root (local dev)
+  const basename = window.location.pathname.startsWith('/vine2') ? '/vine2' : '/'
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />

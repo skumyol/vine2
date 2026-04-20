@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+      network: host  # Fix networking on Alpine VPS
     container_name: vinobuzz-backend
     restart: unless-stopped
     ports:
@@ -47,6 +48,7 @@ services:
     # build:  # Uncomment to rebuild when network is stable
     #   context: .
     #   dockerfile: Dockerfile.playwright
+    #   network: host  # Fix networking on Alpine VPS
     container_name: vinobuzz-playwright
     restart: unless-stopped
     ports:

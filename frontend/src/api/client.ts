@@ -8,12 +8,16 @@ import type {
 const BASE = window.location.pathname.startsWith('/vine2') ? '/vine2' : ''  // '' for local dev, '/vine2' for production
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const url = `${BASE}${path}`
+  console.log('API request:', url, options?.method || 'GET')
+  const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
+  console.log('API response:', url, res.status)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
+    console.error('API error:', url, res.status, text)
     throw new Error(`API ${res.status}: ${text}`)
   }
   return res.json() as Promise<T>

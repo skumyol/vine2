@@ -45,10 +45,10 @@ services:
   # Playwright Browser Automation Service (separate container)
   playwright:
     image: vine2-playwright:latest  # Use previously built image
-    # build:  # Uncomment to rebuild when network is stable
-    #   context: .
-    #   dockerfile: Dockerfile.playwright
-    #   network: host  # Fix networking on Alpine VPS
+    build:  # Uncomment to rebuild when network is stable
+      context: .
+      dockerfile: Dockerfile.playwright
+      network: host  # Fix networking on Alpine VPS
     container_name: vinobuzz-playwright
     restart: unless-stopped
     ports:

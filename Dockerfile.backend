@@ -4,7 +4,9 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies for OCR only (no Chromium/Playwright)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Force IPv4 to fix network issues on Alpine VPS hosts
+RUN apt-get -o Acquire::ForceIPv4=true update && \
+    apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
     libtesseract-dev \

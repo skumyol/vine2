@@ -4,7 +4,9 @@ FROM mcr.microsoft.com/playwright/python:v1.50.0-noble
 WORKDIR /app
 
 # Install curl for healthcheck only (Python already present)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Force IPv4 to fix network issues on Alpine VPS hosts
+RUN apt-get -o Acquire::ForceIPv4=true update && \
+    apt-get -o Acquire::ForceIPv4=true install -y --no-install-recommends \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*

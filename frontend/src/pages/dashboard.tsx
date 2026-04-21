@@ -7,10 +7,10 @@ import { WineInputForm } from '@/components/wine-input-form'
 import { ResultDetail } from '@/components/result-detail'
 import { ResultsTable } from '@/components/results-table'
 import { BatchSummary } from '@/components/batch-summary'
-import { analyzeSkuWithPipeline, analyzeBatchWithPipeline } from '@/api/client'
+import { analyzeSkuWithPipeline } from '@/api/client'
 import { TEST_SKUS } from '@/data/test-skus'
 import type { AnalyzeRequest, AnalyzeResponse, PipelineName } from '@/types'
-import { FlaskConical, ListChecks, Download, CheckSquare, Square } from 'lucide-react'
+import { FlaskConical, ListChecks, Download, CheckSquare, Square, Loader2, CheckCircle, XCircle } from 'lucide-react'
 
 export function Dashboard() {
   const [results, setResults] = useState<AnalyzeResponse[]>([])
@@ -22,6 +22,7 @@ export function Dashboard() {
   const [singlePipeline, setSinglePipeline] = useState<PipelineName>('voter')
   const [batchPipeline, setBatchPipeline] = useState<PipelineName>('voter')
   const [selectedSkus, setSelectedSkus] = useState<Set<number>>(new Set(TEST_SKUS.map((_, i) => i)))
+  const [processingStatus, setProcessingStatus] = useState<Record<number, 'pending' | 'processing' | 'done' | 'error'>>({})
 
   const handleSingle = useCallback(async (req: AnalyzeRequest, pipeline: PipelineName) => {
     setLoading(true)
@@ -40,34 +41,53 @@ export function Dashboard() {
 
   const handleBatch = useCallback(async () => {
     console.log('handleBatch clicked')
-    const selectedItems = Array.from(selectedSkus).map((i) => TEST_SKUS[i])
-    if (selectedItems.length === 0) {
+    const selectedIndices = Array.from(selectedSkus).sort((a, b) => a - b)
+    if (selectedIndices.length === 0) {
       setError('Please select at least one wine to analyze')
       return
     }
     setBatchLoading(true)
     setError(null)
-    setBatchProgress({ done: 0, total: selectedItems.length })
-    try {
-      const items: AnalyzeRequest[] = selectedItems.map((s) => ({
-        wine_name: s.wine_name,
-        vintage: s.vintage,
-        format: s.format,
-        region: s.region,
-        analyzer_mode: 'strict' as const,
-      }))
-      console.log('Calling analyzeBatchWithPipeline with', items.length, 'items')
-      const res = await analyzeBatchWithPipeline(items, batchPipeline)
-      console.log('Batch result:', res)
-      setResults(res.results)
-      setBatchProgress({ done: res.results.length, total: selectedItems.length })
-      setSelectedIdx(null)
-    } catch (e) {
-      console.error('Batch error:', e)
-      setError(e instanceof Error ? e.message : 'Batch analysis failed')
-    } finally {
-      setBatchLoading(false)
+    setResults([])
+    
+    // Initialize all selected as pending
+    const initialStatus: Record<number, 'pending' | 'processing' | 'done' | 'error'> = {}
+    selectedIndices.forEach((i) => (initialStatus[i] = 'pending'))
+    setProcessingStatus(initialStatus)
+    setBatchProgress({ done: 0, total: selectedIndices.length })
+    
+    const newResults: AnalyzeResponse[] = []
+    
+    for (let idx = 0; idx < selectedIndices.length; idx++) {
+      const skuIndex = selectedIndices[idx]
+      const sku = TEST_SKUS[skuIndex]
+      
+      // Mark current as processing
+      setProcessingStatus((prev) => ({ ...prev, [skuIndex]: 'processing' }))
+      
+      try {
+        const item: AnalyzeRequest = {
+          wine_name: sku.wine_name,
+          vintage: sku.vintage,
+          format: sku.format,
+          region: sku.region,
+          analyzer_mode: 'strict' as const,
+        }
+        console.log(`Processing ${idx + 1}/${selectedIndices.length}:`, sku.wine_name)
+        const res = await analyzeSkuWithPipeline(item, batchPipeline)
+        newResults.push(res)
+        setResults([...newResults])
+        setProcessingStatus((prev) => ({ ...prev, [skuIndex]: 'done' }))
+        setBatchProgress({ done: idx + 1, total: selectedIndices.length })
+      } catch (e) {
+        console.error(`Error processing ${sku.wine_name}:`, e)
+        setProcessingStatus((prev) => ({ ...prev, [skuIndex]: 'error' }))
+        // Continue with next item even if one fails
+      }
     }
+    
+    setSelectedIdx(null)
+    setBatchLoading(false)
   }, [batchPipeline, selectedSkus])
 
   const toggleSku = useCallback((index: number) => {
@@ -210,7 +230,8 @@ export function Dashboard() {
                   <th className="py-2 pr-3 font-medium text-muted-foreground">Wine Name</th>
                   <th className="py-2 pr-3 font-medium text-muted-foreground w-20">Vintage</th>
                   <th className="py-2 pr-3 font-medium text-muted-foreground w-28">Region</th>
-                  <th className="py-2 font-medium text-muted-foreground w-24">Difficulty</th>
+                  <th className="py-2 pr-3 font-medium text-muted-foreground w-24">Difficulty</th>
+                  <th className="py-2 font-medium text-muted-foreground w-32">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,7 +256,7 @@ export function Dashboard() {
                     <td className="py-2 pr-3">{s.wine_name}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{s.vintage}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{s.region}</td>
-                    <td className="py-2">
+                    <td className="py-2 pr-3">
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           s.difficulty === 'Very Hard'
@@ -247,6 +268,34 @@ export function Dashboard() {
                       >
                         {s.difficulty}
                       </span>
+                    </td>
+                    <td className="py-2">
+                      {processingStatus[i] === 'processing' && (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-primary animate-pulse w-full" />
+                          </div>
+                        </div>
+                      )}
+                      {processingStatus[i] === 'done' && (
+                        <div className="flex items-center gap-1.5 text-emerald-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-xs font-medium">Done</span>
+                        </div>
+                      )}
+                      {processingStatus[i] === 'error' && (
+                        <div className="flex items-center gap-1.5 text-red-600">
+                          <XCircle className="h-4 w-4" />
+                          <span className="text-xs font-medium">Error</span>
+                        </div>
+                      )}
+                      {processingStatus[i] === 'pending' && (
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                          <span className="text-xs">Waiting...</span>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

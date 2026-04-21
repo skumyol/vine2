@@ -10,7 +10,7 @@ import { BatchSummary } from '@/components/batch-summary'
 import { analyzeSkuWithPipeline, analyzeBatchWithPipeline } from '@/api/client'
 import { TEST_SKUS } from '@/data/test-skus'
 import type { AnalyzeRequest, AnalyzeResponse, PipelineName } from '@/types'
-import { FlaskConical, ListChecks, Download } from 'lucide-react'
+import { FlaskConical, ListChecks, Download, CheckSquare, Square } from 'lucide-react'
 
 export function Dashboard() {
   const [results, setResults] = useState<AnalyzeResponse[]>([])
@@ -21,6 +21,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [singlePipeline, setSinglePipeline] = useState<PipelineName>('voter')
   const [batchPipeline, setBatchPipeline] = useState<PipelineName>('voter')
+  const [selectedSkus, setSelectedSkus] = useState<Set<number>>(new Set(TEST_SKUS.map((_, i) => i)))
 
   const handleSingle = useCallback(async (req: AnalyzeRequest, pipeline: PipelineName) => {
     setLoading(true)
@@ -39,11 +40,16 @@ export function Dashboard() {
 
   const handleBatch = useCallback(async () => {
     console.log('handleBatch clicked')
+    const selectedItems = Array.from(selectedSkus).map((i) => TEST_SKUS[i])
+    if (selectedItems.length === 0) {
+      setError('Please select at least one wine to analyze')
+      return
+    }
     setBatchLoading(true)
     setError(null)
-    setBatchProgress({ done: 0, total: TEST_SKUS.length })
+    setBatchProgress({ done: 0, total: selectedItems.length })
     try {
-      const items: AnalyzeRequest[] = TEST_SKUS.map((s) => ({
+      const items: AnalyzeRequest[] = selectedItems.map((s) => ({
         wine_name: s.wine_name,
         vintage: s.vintage,
         format: s.format,
@@ -54,7 +60,7 @@ export function Dashboard() {
       const res = await analyzeBatchWithPipeline(items, batchPipeline)
       console.log('Batch result:', res)
       setResults(res.results)
-      setBatchProgress({ done: res.results.length, total: TEST_SKUS.length })
+      setBatchProgress({ done: res.results.length, total: selectedItems.length })
       setSelectedIdx(null)
     } catch (e) {
       console.error('Batch error:', e)
@@ -62,7 +68,27 @@ export function Dashboard() {
     } finally {
       setBatchLoading(false)
     }
-  }, [batchPipeline])
+  }, [batchPipeline, selectedSkus])
+
+  const toggleSku = useCallback((index: number) => {
+    setSelectedSkus((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelectedSkus(new Set(TEST_SKUS.map((_, i) => i)))
+  }, [])
+
+  const clearAll = useCallback(() => {
+    setSelectedSkus(new Set())
+  }, [])
 
   const handleExportJson = useCallback(() => {
     if (results.length === 0) return
@@ -139,7 +165,7 @@ export function Dashboard() {
               </div>
               <Button
                 onClick={handleBatch}
-                disabled={batchLoading}
+                disabled={batchLoading || selectedSkus.size === 0}
                 variant="outline"
                 size="sm"
               >
@@ -149,7 +175,7 @@ export function Dashboard() {
                     Processing {batchProgress.total} SKUs...
                   </>
                 ) : (
-                  <>Run All 10 Test SKUs</>
+                  <>Run {selectedSkus.size} Selected</>
                 )}
               </Button>
             </div>
@@ -160,6 +186,26 @@ export function Dashboard() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
+                  <th className="py-2 pr-2 font-medium text-muted-foreground w-10">
+                    <button
+                      onClick={selectedSkus.size === TEST_SKUS.length ? clearAll : selectAll}
+                      className="flex items-center justify-center hover:text-primary transition-colors"
+                      title={selectedSkus.size === TEST_SKUS.length ? 'Clear all' : 'Select all'}
+                    >
+                      {selectedSkus.size === TEST_SKUS.length ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : selectedSkus.size > 0 ? (
+                        <div className="relative">
+                          <Square className="h-4 w-4" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="h-2 w-2 bg-primary rounded-sm" />
+                          </div>
+                        </div>
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </button>
+                  </th>
                   <th className="py-2 pr-3 font-medium text-muted-foreground w-8">#</th>
                   <th className="py-2 pr-3 font-medium text-muted-foreground">Wine Name</th>
                   <th className="py-2 pr-3 font-medium text-muted-foreground w-20">Vintage</th>
@@ -169,7 +215,22 @@ export function Dashboard() {
               </thead>
               <tbody>
                 {TEST_SKUS.map((s, i) => (
-                  <tr key={i} className="border-b border-border/50 last:border-0">
+                  <tr
+                    key={i}
+                    className={`border-b border-border/50 last:border-0 cursor-pointer transition-colors ${
+                      selectedSkus.has(i) ? 'bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => toggleSku(i)}
+                  >
+                    <td className="py-2 pr-2">
+                      <div className="flex items-center justify-center">
+                        {selectedSkus.has(i) ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2 pr-3 text-muted-foreground font-mono text-xs">{i + 1}</td>
                     <td className="py-2 pr-3">{s.wine_name}</td>
                     <td className="py-2 pr-3 text-muted-foreground">{s.vintage}</td>
